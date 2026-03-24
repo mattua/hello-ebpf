@@ -32,6 +32,24 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
         return 0;
     }
 
+    if (event->type == HELLO_TCP_EVENT_SEND) {
+        printf("hello from eBPF: pid=%u comm=%s hook=tcp_sendmsg bytes=%u\n",
+            event->pid,
+            event->comm,
+            event->bytes);
+        fflush(stdout);
+        return 0;
+    }
+
+    if (event->type == HELLO_TCP_EVENT_RECV) {
+        printf("hello from eBPF: pid=%u comm=%s hook=tcp_recvmsg bytes=%u\n",
+            event->pid,
+            event->comm,
+            event->bytes);
+        fflush(stdout);
+        return 0;
+    }
+
     if (event->type == HELLO_TCP_EVENT_V4) {
         family = "tcp_v4_connect";
         if (!inet_ntop(AF_INET, &event->daddr_v4, address, sizeof(address))) {

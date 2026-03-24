@@ -176,10 +176,12 @@ When ready, add:
 
 ## 8) First TCP-layer eBPF hello world
 
-This repo now includes a minimal eBPF example that hooks TCP connect attempts.
+This repo now includes a minimal eBPF example that hooks TCP connect attempts, TCP send calls, and TCP receive returns.
 
 Why this hook:
 - It attaches to `tcp_v4_connect` and `tcp_v6_connect`.
+- It also attaches to `tcp_sendmsg` to measure outgoing byte counts.
+- It also attaches to `tcp_recvmsg` (return probe) to measure incoming byte counts.
 - It does not depend on kernel BTF being exposed.
 - It sends small events to user space with a ring buffer, so output appears directly in the terminal.
 
@@ -215,6 +217,8 @@ The loader will wait for TCP connection attempts and print lines like:
 
 ```text
 hello from eBPF: pid=1234 comm=curl dst=127.0.0.1:8080 hook=tcp_v4_connect
+hello from eBPF: pid=1234 comm=curl hook=tcp_sendmsg bytes=78
+hello from eBPF: pid=1234 comm=curl hook=tcp_recvmsg bytes=512
 ```
 
 Observed on this Raspberry Pi during verification:
@@ -223,6 +227,7 @@ Observed on this Raspberry Pi during verification:
 listening for TCP connect events, press Ctrl+C to stop
 hello from eBPF: pid=1683 comm=node dst=140.82.112.22:443 hook=tcp_v4_connect
 hello from eBPF: pid=8683 comm=curl dst=127.0.0.1:18080 hook=tcp_v4_connect
+hello from eBPF: pid=8683 comm=curl hook=tcp_sendmsg bytes=78
 ```
 
 Note: background tools on the system, including the editor, may also create TCP events while the tracer is running.
@@ -233,6 +238,10 @@ The tracer currently reports:
 - destination IP address
 - destination port
 - IPv4 vs IPv6 connect hook
+- requested byte count at `tcp_sendmsg`
+- returned byte count at `tcp_recvmsg`
+
+These `tcp_sendmsg`/`tcp_recvmsg` hooks are measurement only. They tell you send-request and receive-return byte counts, but do not yet copy or decode payload contents.
 
 ### Trigger some TCP traffic
 

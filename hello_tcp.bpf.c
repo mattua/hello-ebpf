@@ -21,6 +21,48 @@ struct {
     __uint(max_entries, 1 << 24);
 } events SEC(".maps");
 
+static __always_inline int submit_send_event(unsigned int bytes)
+{
+    struct hello_tcp_event *event;
+    unsigned long long pid_tgid;
+
+    event = bpf_ringbuf_reserve(&events, sizeof(*event), 0);
+    if (!event) {
+        return 0;
+    }
+
+    __builtin_memset(event, 0, sizeof(*event));
+    pid_tgid = bpf_get_current_pid_tgid();
+    event->pid = pid_tgid >> 32;
+    event->type = HELLO_TCP_EVENT_SEND;
+    event->bytes = bytes;
+    bpf_get_current_comm(&event->comm, sizeof(event->comm));
+    bpf_ringbuf_submit(event, 0);
+
+    return 0;
+}
+
+static __always_inline int submit_recv_event(unsigned int bytes)
+{
+    struct hello_tcp_event *event;
+    unsigned long long pid_tgid;
+
+    event = bpf_ringbuf_reserve(&events, sizeof(*event), 0);
+    if (!event) {
+        return 0;
+    }
+
+    __builtin_memset(event, 0, sizeof(*event));
+    pid_tgid = bpf_get_current_pid_tgid();
+    event->pid = pid_tgid >> 32;
+    event->type = HELLO_TCP_EVENT_RECV;
+    event->bytes = bytes;
+    bpf_get_current_comm(&event->comm, sizeof(event->comm));
+    bpf_ringbuf_submit(event, 0);
+
+    return 0;
+}
+
 static __always_inline int submit_event_v4(const void *uaddr)
 {
     struct hello_tcp_event *event;
@@ -99,6 +141,28 @@ int BPF_KPROBE(handle_tcp_v6_connect, void *sk, const struct sockaddr *uaddr)
     (void)sk;
 
     return submit_event_v6(uaddr);
+}
+
+SEC("kprobe/tcp_sendmsg")
+int BPF_KPROBE(handle_tcp_sendmsg, void *sk, void *msg, unsigned long size)
+{
+    (void)ctx;
+    (void)sk;
+    (void)msg;
+
+    return submit_send_event((unsigned int)size);
+}
+
+SEC("kretprobe/tcp_recvmsg")
+int BPF_KRETPROBE(handle_tcp_recvmsg_ret, long ret)
+{
+    (void)ctx;
+
+    if (ret <= 0) {
+        return 0;
+    }
+
+    return submit_recv_event((unsigned int)ret);
 }
 
 char LICENSE[] SEC("license") = "GPL";
