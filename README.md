@@ -318,12 +318,107 @@ Notes:
 - HTTP parsing is best-effort from sampled payload slices.
 - HTTPS traffic is encrypted and will not decode into HTTP text.
 
+## 10) Simple FTP control-channel demo
+
+You can also demonstrate the same eBPF -> C collector -> Python consumer flow with a plain FTP server.
+
+Install dependency with the same virtualenv step above:
+
+```bash
+.venv/bin/pip install -r requirements.txt
+```
+
+The BPF allowlist now captures localhost traffic to both `127.0.0.1:8080` and `127.0.0.1:2121`.
+
+### Run the FTP flow
+
+**Step 1 — start the Python consumer** (Terminal 1):
+
+```bash
+make python-consumer
+```
+
+**Step 2 — start the eBPF collector** (Terminal 2):
+
+```bash
+sudo ./hello_tcp_user
+```
+
+**Step 3 — start the FTP server** (Terminal 3):
+
+```bash
+make ftp-server
+```
+
+By default it exposes only one file:
+- `ACME_EOD_BondPrices.csv`
+
+Default credentials:
+- user: `bonduser`
+- password: `bondpass`
+
+**Step 4 — generate FTP traffic** (Terminal 4):
+
+```bash
+curl --user bonduser:bondpass ftp://127.0.0.1:2121/ACME_EOD_BondPrices.csv
+```
+
+That single client command logs in, opens the FTP data connection, retrieves the CSV, and prints it to stdout.
+
+The FTP server uses a single fixed passive data port so the eBPF tracer can capture both:
+- FTP control channel on `127.0.0.1:2121`
+- FTP data channel on `127.0.0.1:30000`
+
+If you want to see the directory listing first, use:
+
+```bash
+python3 -c "from ftplib import FTP; ftp = FTP(); ftp.connect('127.0.0.1', 2121); ftp.login('bonduser', 'bondpass'); print(ftp.nlst()); ftp.quit()"
+```
+
+The Python consumer will print FTP control-channel messages such as:
+
+```text
+[rx] pid=1234 comm=curl dst=127.0.0.1:2121 ftp reply 220 hello-ebpf FTP server ready
+[tx] pid=1234 comm=curl dst=127.0.0.1:2121 ftp login-user bonduser
+[rx] pid=1234 comm=curl dst=127.0.0.1:2121 ftp reply 331 Username ok, send password.
+[tx] pid=1234 comm=curl dst=127.0.0.1:2121 ftp login-pass bondpass
+[rx] pid=1234 comm=curl dst=127.0.0.1:2121 ftp reply 230 Login successful.
+[tx] pid=1234 comm=curl dst=127.0.0.1:2121 ftp passive-request
+[rx] pid=1234 comm=curl dst=127.0.0.1:2121 ftp passive 227 Entering passive mode (...)
+[tx] pid=1234 comm=curl dst=127.0.0.1:2121 ftp retrieve ACME_EOD_BondPrices.csv
+[rx] pid=1234 comm=curl dst=127.0.0.1:30000 ftp-data body cusip,datetime,recordid,transactionid,price,yield,spread
+```
+
+For the `curl` retrieval, a typical FTP control-channel exchange looks like:
+
+```text
+[rx] ... ftp reply 220 hello-ebpf FTP server ready
+[tx] ... ftp login-user bonduser
+[rx] ... ftp reply 331 Username ok, send password.
+[tx] ... ftp login-pass bondpass
+[rx] ... ftp reply 230 Login successful.
+[tx] ... ftp type I
+[rx] ... ftp reply 200 Type set to: Binary.
+[tx] ... ftp passive-request
+[rx] ... ftp passive 227 Entering passive mode (...)
+[tx] ... ftp retrieve ACME_EOD_BondPrices.csv
+[rx] ... ftp transfer 125 Data connection already open. Transfer starting.
+[rx] ... ftp transfer 226 Transfer complete.
+[rx] ... ftp-data body cusip,datetime,recordid,transactionid,price,yield,spread
+```
+
+Note:
+- This FTP demo captures both the plaintext control channel on port `2121` and the CSV file payload on passive data port `30000`.
+- The Python consumer prints the full CSV payload captured from the FTP data connection.
+
 ### Destination allowlist (current behavior)
 
 Logging is restricted to destination pairs listed in `destination_allowlist` in `hello_tcp.bpf.c`.
 
-Current starter value:
+Current starter values:
 - `127.0.0.1:8080`
+- `127.0.0.1:2121`
+- `127.0.0.1:30000`
 
 Example edit (host-order values in the list):
 

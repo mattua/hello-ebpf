@@ -50,6 +50,8 @@ struct trace_event_raw_sys_exit {
 
 static const struct hello_tcp_filter_v4 destination_allowlist[] = {
     { .daddr_v4_host = 0x7f000001U, .dport_host = 8080 },
+    { .daddr_v4_host = 0x7f000001U, .dport_host = 2121 },
+    { .daddr_v4_host = 0x7f000001U, .dport_host = 30000 },
 };
 
 static __always_inline int is_allowed_v4(unsigned int daddr_v4_host, unsigned short dport_host)
