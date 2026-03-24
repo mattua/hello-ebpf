@@ -44,8 +44,8 @@ def decode_payload(event: dict) -> bytes:
     return data[:captured_len]
 
 
-def to_text(data: bytes, limit: int = 200) -> str:
-    text = data[:limit].decode("latin-1", errors="replace")
+def to_text(data: bytes) -> str:
+    text = data.decode("latin-1", errors="replace")
     text = text.replace("\r", "\\r").replace("\n", "\\n")
     return text
 
@@ -64,8 +64,7 @@ def print_event(prefix: str, event: object, key: tuple[int, str, int, str]) -> N
         print(f"{base} informational {event.status_code}")
         return
     if isinstance(event, h11.Data):
-        snippet = to_text(event.data)
-        print(f"{base} body-snippet {snippet}")
+        print(f"{base} body {to_text(event.data)}")
         return
     if isinstance(event, h11.EndOfMessage):
         print(f"{base} end-of-message")

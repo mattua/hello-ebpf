@@ -11,7 +11,7 @@ HELLO_TCP_BPF_OBJ := hello_tcp.bpf.o
 HELLO_TCP_SKEL := hello_tcp.skel.h
 HELLO_TCP_USER := hello_tcp_user
 
-.PHONY: all run clean ebpf ebpf-run python-consumer
+.PHONY: all run clean ebpf ebpf-run python-consumer bond-server
 
 all: $(TARGET)
 
@@ -40,6 +40,13 @@ python-consumer:
 		.venv/bin/python tcp_http_consumer.py; \
 	else \
 		python3 tcp_http_consumer.py; \
+	fi
+
+bond-server:
+	@if [ -x .venv/bin/uvicorn ]; then \
+		.venv/bin/uvicorn bond_server:app --host 127.0.0.1 --port 8080; \
+	else \
+		uvicorn bond_server:app --host 127.0.0.1 --port 8080; \
 	fi
 
 clean:

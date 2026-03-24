@@ -290,20 +290,27 @@ You should see:
 listening for TCP events, press Ctrl+C to stop
 ```
 
-**Step 3 — generate plain HTTP traffic** (Terminal 3):
+**Step 3 — start the bond price server** (Terminal 3):
 
 ```bash
-python3 -m http.server 8080 &
-curl -s http://127.0.0.1:8080 >/dev/null
+make bond-server
+```
+
+You should see uvicorn start on `http://127.0.0.1:8080`.
+
+**Step 4 — generate HTTP traffic** (Terminal 4):
+
+```bash
+curl -s http://127.0.0.1:8080/prices | python3 -m json.tool
 ```
 
 Parsed HTTP request/response events will appear in the Python consumer terminal (Terminal 1), for example:
 
 ```
-[tx] pid=1234 comm=curl dst=127.0.0.1:8080 request GET /
+[tx] pid=1234 comm=curl dst=127.0.0.1:8080 request GET /prices
 [tx] pid=1234 comm=curl dst=127.0.0.1:8080 end-of-message
 [rx] pid=1234 comm=curl dst=127.0.0.1:8080 response 200 OK
-[rx] pid=1234 comm=curl dst=127.0.0.1:8080 body-snippet ...
+[rx] pid=1234 comm=curl dst=127.0.0.1:8080 body [{"cusip": ...}]
 [rx] pid=1234 comm=curl dst=127.0.0.1:8080 end-of-message
 ```
 
