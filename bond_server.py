@@ -48,7 +48,7 @@ class BondPrice(BaseModel):
 
 @app.get("/prices")
 def get_prices() -> list[dict]:
-    count = random.randint(5, 15)
+    count = random.randint(2, 10)
     now = datetime.now(timezone.utc).isoformat()
     results = []
     for _ in range(count):

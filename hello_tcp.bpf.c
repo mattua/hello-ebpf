@@ -101,12 +101,13 @@ static __always_inline int submit_send_event(unsigned long long pid_tgid, const 
         return 0;
     }
 
-    __builtin_memset(event, 0, sizeof(*event));
     event->pid = pid_tgid >> 32;
     event->type = HELLO_TCP_EVENT_SEND;
     event->bytes = bytes;
     event->dport = connection->dport;
     event->daddr_v4 = connection->daddr_v4;
+    event->captured_len = 0;
+    event->reserved = 0;
     captured_len = bytes;
     if (captured_len > HELLO_TCP_PAYLOAD_MAX) {
         captured_len = HELLO_TCP_PAYLOAD_MAX;
@@ -137,12 +138,13 @@ static __always_inline int submit_recv_event(unsigned long long pid_tgid, const 
         return 0;
     }
 
-    __builtin_memset(event, 0, sizeof(*event));
     event->pid = pid_tgid >> 32;
     event->type = HELLO_TCP_EVENT_RECV;
     event->bytes = bytes;
     event->dport = connection->dport;
     event->daddr_v4 = connection->daddr_v4;
+    event->captured_len = 0;
+    event->reserved = 0;
     captured_len = bytes;
     if (captured_len > requested) {
         captured_len = requested;
@@ -195,11 +197,13 @@ static __always_inline int submit_event_v4(const void *uaddr)
         return 0;
     }
 
-    __builtin_memset(event, 0, sizeof(*event));
     event->pid = pid_tgid >> 32;
     event->type = HELLO_TCP_EVENT_V4;
     event->dport = dest.sin_port;
     event->daddr_v4 = dest.sin_addr.s_addr;
+    event->bytes = 0;
+    event->captured_len = 0;
+    event->reserved = 0;
     bpf_get_current_comm(&event->comm, sizeof(event->comm));
     bpf_ringbuf_submit(event, 0);
 

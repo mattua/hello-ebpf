@@ -120,7 +120,7 @@ static void emit_json_event(const struct hello_tcp_event *event, const char *hoo
 {
     char payload_hex[HELLO_TCP_PAYLOAD_MAX * 2 + 1];
     char comm_sanitized[TASK_COMM_LEN + 1];
-    char json[2048];
+    char json[4096];
     unsigned short dport = ntohs(event->dport);
     ssize_t sent;
     int err;

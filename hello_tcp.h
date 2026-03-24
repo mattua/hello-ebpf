@@ -4,7 +4,7 @@
 #define TASK_COMM_LEN 16
 
 #define HELLO_TCP_FILTER_MAX 8
-#define HELLO_TCP_PAYLOAD_MAX 256
+#define HELLO_TCP_PAYLOAD_MAX 1024
 
 struct hello_tcp_filter_v4 {
     unsigned int daddr_v4_host;
