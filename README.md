@@ -243,6 +243,23 @@ The tracer currently reports:
 
 These `tcp_sendmsg`/`tcp_recvmsg` hooks are measurement only. They tell you send-request and receive-return byte counts, but do not yet copy or decode payload contents.
 
+### Destination allowlist (current behavior)
+
+Logging is restricted to destination pairs listed in `destination_allowlist` in `hello_tcp.bpf.c`.
+
+Current starter value:
+- `127.0.0.1:8080`
+
+Example edit (host-order values in the list):
+
+```c
+static const struct hello_tcp_filter_v4 destination_allowlist[] = {
+    { .daddr_v4_host = 0x7f000001U, .dport_host = 8080 },
+};
+```
+
+Only connections that match this list will emit connect/send/recv events.
+
 ### Trigger some TCP traffic
 
 In another terminal, create a local TCP connection:

@@ -3,6 +3,13 @@
 
 #define TASK_COMM_LEN 16
 
+#define HELLO_TCP_FILTER_MAX 8
+
+struct hello_tcp_filter_v4 {
+    unsigned int daddr_v4_host;
+    unsigned short dport_host;
+};
+
 enum hello_tcp_event_type {
     HELLO_TCP_EVENT_V4 = 1,
     HELLO_TCP_EVENT_V6 = 2,
