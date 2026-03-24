@@ -11,7 +11,10 @@ enum hello_tcp_event_type {
 struct hello_tcp_event {
     unsigned int pid;
     unsigned int type;
+    unsigned short dport;
     char comm[TASK_COMM_LEN];
+    unsigned int daddr_v4;
+    unsigned char daddr_v6[16];
 };
 
 #endif

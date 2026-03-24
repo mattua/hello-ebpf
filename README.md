@@ -214,18 +214,25 @@ make ebpf-run
 The loader will wait for TCP connection attempts and print lines like:
 
 ```text
-hello from eBPF: pid=1234 comm=curl hook=tcp_v4_connect
+hello from eBPF: pid=1234 comm=curl dst=127.0.0.1:8080 hook=tcp_v4_connect
 ```
 
 Observed on this Raspberry Pi during verification:
 
 ```text
 listening for TCP connect events, press Ctrl+C to stop
-hello from eBPF: pid=1683 comm=node hook=tcp_v4_connect
-hello from eBPF: pid=4831 comm=curl hook=tcp_v4_connect
+hello from eBPF: pid=1683 comm=node dst=140.82.112.22:443 hook=tcp_v4_connect
+hello from eBPF: pid=8683 comm=curl dst=127.0.0.1:18080 hook=tcp_v4_connect
 ```
 
 Note: background tools on the system, including the editor, may also create TCP events while the tracer is running.
+
+The tracer currently reports:
+- process ID
+- process name
+- destination IP address
+- destination port
+- IPv4 vs IPv6 connect hook
 
 ### Trigger some TCP traffic
 

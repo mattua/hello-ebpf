@@ -1,3 +1,4 @@
+#include <arpa/inet.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
@@ -20,7 +21,9 @@ static void handle_signal(int signo)
 static int handle_event(void *ctx, void *data, size_t data_sz)
 {
     const struct hello_tcp_event *event = data;
+    char address[INET6_ADDRSTRLEN] = "unknown";
     const char *family = "unknown";
+    unsigned short dport;
 
     (void)ctx;
 
@@ -31,13 +34,25 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
 
     if (event->type == HELLO_TCP_EVENT_V4) {
         family = "tcp_v4_connect";
+        if (!inet_ntop(AF_INET, &event->daddr_v4, address, sizeof(address))) {
+            strncpy(address, "invalid-v4", sizeof(address));
+            address[sizeof(address) - 1] = '\0';
+        }
     } else if (event->type == HELLO_TCP_EVENT_V6) {
         family = "tcp_v6_connect";
+        if (!inet_ntop(AF_INET6, event->daddr_v6, address, sizeof(address))) {
+            strncpy(address, "invalid-v6", sizeof(address));
+            address[sizeof(address) - 1] = '\0';
+        }
     }
 
-    printf("hello from eBPF: pid=%u comm=%s hook=%s\n",
+    dport = ntohs(event->dport);
+
+    printf("hello from eBPF: pid=%u comm=%s dst=%s:%u hook=%s\n",
         event->pid,
         event->comm,
+        address,
+        dport,
         family);
     fflush(stdout);
     return 0;
