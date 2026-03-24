@@ -240,8 +240,76 @@ The tracer currently reports:
 - IPv4 vs IPv6 connect hook
 - requested byte count at `tcp_sendmsg`
 - returned byte count at `tcp_recvmsg`
+- captured payload bytes (up to 256 bytes per SEND/RECV event)
 
-These `tcp_sendmsg`/`tcp_recvmsg` hooks are measurement only. They tell you send-request and receive-return byte counts, but do not yet copy or decode payload contents.
+Payload capture is bounded (default 256 bytes) to keep ring buffer overhead predictable.
+
+## 9) Python HTTP stream parser bridge
+
+`hello_tcp_user` now forwards each event as JSON over a local Unix domain socket.
+
+- Default socket path: `/tmp/hello_tcp_events.sock`
+- Override with env var: `HELLO_TCP_SOCKET_PATH=/tmp/custom.sock`
+
+### Install Python dependency
+
+Recommended (local virtualenv):
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+```
+
+If you use system Python on Debian/Raspberry Pi, `pip` may be blocked by PEP 668 unless you use a virtualenv.
+
+### Run the parser and collector
+
+Run these steps in order — the Python consumer must be started first so the Unix socket exists before the collector tries to connect.
+
+**Step 1 — start the HTTP consumer** (Terminal 1):
+
+```bash
+make python-consumer
+# or equivalently:
+.venv/bin/python3 tcp_http_consumer.py
+```
+
+You should see:
+```
+listening on unix socket: /tmp/hello_tcp_events.sock
+```
+
+**Step 2 — start the eBPF collector** (Terminal 2, requires root):
+
+```bash
+sudo ./hello_tcp_user
+```
+
+You should see:
+```
+listening for TCP events, press Ctrl+C to stop
+```
+
+**Step 3 — generate plain HTTP traffic** (Terminal 3):
+
+```bash
+python3 -m http.server 8080 &
+curl -s http://127.0.0.1:8080 >/dev/null
+```
+
+Parsed HTTP request/response events will appear in the Python consumer terminal (Terminal 1), for example:
+
+```
+[tx] pid=1234 comm=curl dst=127.0.0.1:8080 request GET /
+[tx] pid=1234 comm=curl dst=127.0.0.1:8080 end-of-message
+[rx] pid=1234 comm=curl dst=127.0.0.1:8080 response 200 OK
+[rx] pid=1234 comm=curl dst=127.0.0.1:8080 body-snippet ...
+[rx] pid=1234 comm=curl dst=127.0.0.1:8080 end-of-message
+```
+
+Notes:
+- HTTP parsing is best-effort from sampled payload slices.
+- HTTPS traffic is encrypted and will not decode into HTTP text.
 
 ### Destination allowlist (current behavior)
 

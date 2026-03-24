@@ -11,7 +11,7 @@ HELLO_TCP_BPF_OBJ := hello_tcp.bpf.o
 HELLO_TCP_SKEL := hello_tcp.skel.h
 HELLO_TCP_USER := hello_tcp_user
 
-.PHONY: all run clean ebpf ebpf-run
+.PHONY: all run clean ebpf ebpf-run python-consumer
 
 all: $(TARGET)
 
@@ -34,6 +34,13 @@ $(HELLO_TCP_USER): hello_tcp_user.c hello_tcp.h $(HELLO_TCP_SKEL)
 
 ebpf-run: $(HELLO_TCP_USER)
 	sudo ./$(HELLO_TCP_USER)
+
+python-consumer:
+	@if [ -x .venv/bin/python ]; then \
+		.venv/bin/python tcp_http_consumer.py; \
+	else \
+		python3 tcp_http_consumer.py; \
+	fi
 
 clean:
 	rm -f $(TARGET) $(HELLO_TCP_BPF_OBJ) $(HELLO_TCP_SKEL) $(HELLO_TCP_USER)

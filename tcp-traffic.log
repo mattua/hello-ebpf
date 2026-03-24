@@ -1,9 +1,0 @@
-listening for TCP connect events, press Ctrl+C to stop
-hello from eBPF: pid=16486 comm=curl dst=127.0.0.1:8080 hook=tcp_v4_connect
-hello from eBPF: pid=16486 comm=curl hook=tcp_sendmsg bytes=78
-hello from eBPF: pid=16486 comm=curl hook=tcp_recvmsg bytes=155
-hello from eBPF: pid=16486 comm=curl hook=tcp_recvmsg bytes=724
-hello from eBPF: pid=16719 comm=curl dst=127.0.0.1:8080 hook=tcp_v4_connect
-hello from eBPF: pid=16719 comm=curl hook=tcp_sendmsg bytes=78
-hello from eBPF: pid=16719 comm=curl hook=tcp_recvmsg bytes=155
-hello from eBPF: pid=16719 comm=curl hook=tcp_recvmsg bytes=724
